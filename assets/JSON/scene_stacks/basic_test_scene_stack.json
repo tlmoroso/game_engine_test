@@ -1,0 +1,6 @@
+{
+  "load_type_id": "scene_stack",
+  "actual_value": {
+    "scene_paths": ["assets/JSON/scenes/basic_test_scene.json"]
+  }
+}

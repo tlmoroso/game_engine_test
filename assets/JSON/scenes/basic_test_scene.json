@@ -1,0 +1,10 @@
+{
+  "load_type_id": "basic_test_scene",
+  "actual_value": {
+    "entity_paths": ["assets/JSON/entities/basic_entity.json"],
+    "scene_values": {
+      "text": "TEST TEXT",
+      "frame": 0
+    }
+  }
+}
