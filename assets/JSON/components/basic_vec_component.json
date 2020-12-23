@@ -1,0 +1,6 @@
+{
+  "load_type_id": "basic_vector_test_component",
+  "actual_value": {
+    "vector": [0,1,2,3,4,5,69]
+  }
+}

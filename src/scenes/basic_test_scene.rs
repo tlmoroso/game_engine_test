@@ -15,15 +15,18 @@ use game_engine::load::{JSONLoad, load_entity_vec, build_task_error};
 use game_engine::scenes::{Scene, SceneLoaderJSON, SceneLoader};
 use game_engine::scenes::scene_stack::SceneTransition;
 use crate::input::TestCustomInput;
-use specs::{World, Entity};
+use specs::{World, Entity, RunNow};
 use crate::components::BasicTestComponentMux;
 use crate::globals::TestGlobalError::{LoadIDMatchError, ConvertJSONError};
+use crate::systems::print_basic_components::PrintBasicComponents;
+use std::ops::Deref;
 
 #[derive(Deserialize, Debug)]
 pub struct BasicTestSceneLoader {
     scene_json: JSONLoad,
 }
 
+const LAST_FRAME: usize = 120;
 pub const BASIC_TEST_SCENE_FILE_ID: &str = "basic_test_scene";
 
 impl BasicTestSceneLoader {
@@ -99,6 +102,11 @@ impl Scene<TestCustomInput> for BasicTestScene {
         if self.frame % 60 == 0 {
             println!("NUM FRAMES: {}", self.frame);
         }
+
+        if self.frame == LAST_FRAME {
+            let mut print_components = PrintBasicComponents;
+            print_components.run_now(ecs.read().unwrap().deref());
+        }
         return Ok(())
     }
 
@@ -111,9 +119,10 @@ impl Scene<TestCustomInput> for BasicTestScene {
     }
 
     fn is_finished(&self) -> Result<bool> {
-        return if self.frame == 300 {
+        return if self.frame == LAST_FRAME {
             println!("{}", self.get_name());
             println!("Entities: {:?}", self.entities);
+
             Ok(true)
         } else {
             Ok(false)

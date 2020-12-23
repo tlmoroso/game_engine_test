@@ -9,10 +9,23 @@ use crate::scenes::basic_test_scene::BASIC_TEST_SCENE_FILE_ID;
 use coffee::graphics::Window;
 use coffee::load::Task;
 use specs::{World, WorldExt};
+use crate::components::basic_boolean_test::BasicBooleanTest;
+use crate::components::basic_number_test::BasicNumberTest;
+use crate::components::basic_text_test::BasicTextTest;
+use crate::components::basic_vec_test::BasicVectorTest;
+use crate::components::basic_map_test::BasicMapTest;
 
 pub struct BasicTestGameWrapper {}
 
 impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
+    fn register_components(ecs: &mut World) {
+        ecs.register::<BasicBooleanTest>();
+        ecs.register::<BasicNumberTest>();
+        ecs.register::<BasicTextTest>();
+        ecs.register::<BasicVectorTest>();
+        ecs.register::<BasicMapTest>();
+    }
+
     fn load(window: &Window) -> Task<(Arc<RwLock<World>>, SceneStack<TestCustomInput>)> {
         let mut ecs = Arc::new(RwLock::new(World::new()));
 

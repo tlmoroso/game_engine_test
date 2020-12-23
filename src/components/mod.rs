@@ -1,8 +1,15 @@
+pub mod basic_number_test;
+pub mod basic_boolean_test;
+pub mod basic_vec_test;
+pub mod basic_text_test;
+pub mod basic_map_test;
+
 use game_engine::components::{ComponentMux, ComponentLoader};
 use game_engine::load::JSONLoad;
 
 use anyhow::Result;
-use specs::{Component, VecStorage, EntityBuilder, World, Builder};
+use thiserror::Error;
+use specs::{Component, VecStorage, EntityBuilder, World, Builder, WorldExt};
 use std::fmt::Debug;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -11,23 +18,24 @@ use std::marker::PhantomData;
 use std::sync::{Arc, RwLock};
 use coffee::graphics::Window;
 use crate::globals::TestGlobalError::LoadIDMatchError;
-
-pub const BASIC_TEST_NUMBER_COMPONENT_LOAD_ID: &str = "basic_test_number_component";
-pub const BASIC_TEST_BOOLEAN_COMPONENT_LOAD_ID: &str = "basic_test_boolean_component";
-pub const BASIC_TEST_TEXT_COMPONENT_LOAD_ID: &str = "basic_test_text_component";
-pub const BASIC_TEST_VECTOR_COMPONENT_LOAD_ID: &str = "basic_test_vector_component";
-pub const BASIC_TEST_MAP_COMPONENT_LOAD_ID: &str = "basic_test_map_component";
+use crate::components::basic_number_test::{BasicNumberTest, BASIC_NUMBER_TEST_COMPONENT_LOAD_ID};
+use crate::components::basic_boolean_test::{BasicBooleanTest, BASIC_BOOLEAN_TEST_COMPONENT_LOAD_ID};
+use crate::components::basic_vec_test::{BasicVectorTest, BASIC_VECTOR_TEST_COMPONENT_LOAD_ID};
+use crate::components::basic_text_test::{BasicTextTest, BASIC_TEXT_TEST_COMPONENT_LOAD_ID};
+use crate::components::basic_map_test::{BasicMapTest, BASIC_MAP_TEST_COMPONENT_LOAD_ID};
+use crate::components::ComponentError::ComponentPoisonError;
+use specs::world::LazyBuilder;
 
 pub struct BasicTestComponentMux {}
 
 impl ComponentMux for BasicTestComponentMux {
     fn map_json_to_loader(json: JSONLoad) -> Result<Box<dyn ComponentLoader>> {
         return match json.load_type_id.as_str() {
-            BASIC_TEST_NUMBER_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicNumberTestComponent>::new(json)?)),
-            BASIC_TEST_BOOLEAN_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicBooleanTestComponent>::new(json)?)),
-            BASIC_TEST_TEXT_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicTextTestComponent>::new(json)?)),
-            BASIC_TEST_VECTOR_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTestComponent>::new(json)?)),
-            BASIC_TEST_MAP_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTestComponent>::new(json)?)),
+            BASIC_NUMBER_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicNumberTest>::new(json)?)),
+            BASIC_BOOLEAN_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicBooleanTest>::new(json)?)),
+            BASIC_TEXT_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicTextTest>::new(json)?)),
+            BASIC_VECTOR_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTest>::new(json)?)),
+            BASIC_MAP_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTest>::new(json)?)),
             _ => Err(anyhow::Error::new(
                 LoadIDMatchError {
                     load_type_id: json.load_type_id
@@ -37,73 +45,8 @@ impl ComponentMux for BasicTestComponentMux {
     }
 }
 
-pub trait BasicTestComponent: Component + Debug + Send + Sync + for<'de> Deserialize<'de> {
+pub trait BasicTestComponent: Component + Debug + Send + Sync {
     const LOAD_ID: &'static str;
-}
-
-#[derive(Deserialize, Debug)]
-pub struct BasicNumberTestComponent {
-    pub number: u32
-}
-
-impl Component for BasicNumberTestComponent {
-    type Storage = VecStorage<Self>;
-}
-
-impl BasicTestComponent for BasicNumberTestComponent {
-    const LOAD_ID: &'static str = BASIC_TEST_NUMBER_COMPONENT_LOAD_ID;
-}
-
-#[derive(Deserialize, Debug)]
-pub struct BasicBooleanTestComponent {
-    pub boolean: bool
-}
-
-impl Component for BasicBooleanTestComponent {
-    type Storage = VecStorage<Self>;
-}
-
-impl BasicTestComponent for BasicBooleanTestComponent {
-    const LOAD_ID: &'static str = BASIC_TEST_BOOLEAN_COMPONENT_LOAD_ID;
-}
-
-#[derive(Deserialize, Debug)]
-pub struct BasicTextTestComponent {
-    pub text: String
-}
-
-impl Component for BasicTextTestComponent {
-    type Storage = VecStorage<Self>;
-}
-
-impl BasicTestComponent for BasicTextTestComponent {
-    const LOAD_ID: &'static str = BASIC_TEST_TEXT_COMPONENT_LOAD_ID;
-}
-
-#[derive(Deserialize, Debug)]
-pub struct BasicVectorTestComponent {
-    pub vector: Vec<u32>
-}
-
-impl Component for BasicVectorTestComponent {
-    type Storage = VecStorage<Self>;
-}
-
-impl BasicTestComponent for BasicVectorTestComponent {
-    const LOAD_ID: &'static str = BASIC_TEST_VECTOR_COMPONENT_LOAD_ID;
-}
-
-#[derive(Deserialize, Debug)]
-pub struct BasicMapTestComponent {
-    pub map: HashMap<u32, String>
-}
-
-impl Component for BasicMapTestComponent {
-    type Storage = VecStorage<Self>;
-}
-
-impl BasicTestComponent for BasicMapTestComponent {
-    const LOAD_ID: &'static str = BASIC_TEST_MAP_COMPONENT_LOAD_ID;
 }
 
 #[derive(Debug)]
@@ -131,10 +74,26 @@ impl<T: BasicTestComponent> BasicTestComponentLoader<T> {
     }
 }
 
-impl<T: BasicTestComponent> ComponentLoader for BasicTestComponentLoader<T> {
-    fn load_component<'b>(&self, entity_task: EntityBuilder<'b>, ecs: Arc<RwLock<World>>, window: &Window) -> Result<EntityBuilder<'b>> {
+impl<T: BasicTestComponent + for<'de> Deserialize<'de>> ComponentLoader for BasicTestComponentLoader<T>
+    where <T as specs::Component>::Storage: std::default::Default {
+    fn load_component<'b>(&self, builder: LazyBuilder<'b>, ecs: &World, window: &Window) -> Result<LazyBuilder<'b>> {
+        // println!("Entered load_component for {:?}", self.component_name);
+        // let mut ecs = ecs.write()
+        //     .map_err( |e| {
+        //         anyhow::Error::new(
+        //             ComponentPoisonError {
+        //                 var_name: stringify!(ecs).to_string(),
+        //                 source_string: e.to_string()
+        //             }
+        //         )
+        //     })?;
+        // println!("acquired lock for ecs");
+
+        // ecs.register::<T>();
+        // println!("registered component with ecs");
+
         Ok(
-            entity_task.with(
+            builder.with(
                 from_value::<T>(self.cached_value.clone())
                     .map_err(|e| {
                         anyhow::Error::new(e)
@@ -158,5 +117,14 @@ impl<T: BasicTestComponent> ComponentLoader for BasicTestComponentLoader<T> {
 
     fn get_component_name(&self) -> String {
         return self.component_name.clone()
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ComponentError {
+    #[error("Failed to get lock of variable: {var_name:?}.")]
+    ComponentPoisonError {
+        var_name: String,
+        source_string: String
     }
 }

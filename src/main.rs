@@ -14,6 +14,7 @@ mod game;
 mod globals;
 mod input;
 mod components;
+mod systems;
 
 fn main() -> coffee::Result<()> {
     MyGame::<BasicTestGameWrapper, TestCustomInput, ()>::run( WindowSettings {

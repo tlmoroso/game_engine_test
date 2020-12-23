@@ -1,0 +1,11 @@
+{
+  "load_type_id": "basic_map_test_component",
+  "actual_value": {
+    "map": {
+      "0": "TEST_STRING_0",
+      "1": "TEST_STRING_1",
+      "2": "TEST_STRING_2",
+      "69": "TEST_STRING_69"
+    }
+  }
+}
