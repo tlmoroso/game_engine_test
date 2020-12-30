@@ -3,6 +3,8 @@ pub mod basic_boolean_test;
 pub mod basic_vec_test;
 pub mod basic_text_test;
 pub mod basic_map_test;
+pub mod mesh_graphic;
+pub mod text_display;
 
 use game_engine::components::{ComponentMux, ComponentLoader};
 use game_engine::load::JSONLoad;
@@ -17,12 +19,14 @@ use serde_json::{Value, from_value};
 use std::marker::PhantomData;
 use std::sync::{Arc, RwLock};
 use coffee::graphics::Window;
-use crate::globals::TestGlobalError::LoadIDMatchError;
+use crate::globals::TestGlobalError::{LoadIDMatchError, ConvertJSONError};
 use crate::components::basic_number_test::{BasicNumberTest, BASIC_NUMBER_TEST_COMPONENT_LOAD_ID};
 use crate::components::basic_boolean_test::{BasicBooleanTest, BASIC_BOOLEAN_TEST_COMPONENT_LOAD_ID};
 use crate::components::basic_vec_test::{BasicVectorTest, BASIC_VECTOR_TEST_COMPONENT_LOAD_ID};
 use crate::components::basic_text_test::{BasicTextTest, BASIC_TEXT_TEST_COMPONENT_LOAD_ID};
 use crate::components::basic_map_test::{BasicMapTest, BASIC_MAP_TEST_COMPONENT_LOAD_ID};
+use crate::components::mesh_graphic::{MESH_GRAPHIC_LOAD_ID, MeshGraphicLoader, MeshGraphic};
+use crate::components::text_display::{TEXT_DISPLAY_FILE_ID, TextDisplay, TextDisplayLoader};
 use crate::components::ComponentError::ComponentPoisonError;
 use specs::world::LazyBuilder;
 
@@ -31,14 +35,17 @@ pub struct BasicTestComponentMux {}
 impl ComponentMux for BasicTestComponentMux {
     fn map_json_to_loader(json: JSONLoad) -> Result<Box<dyn ComponentLoader>> {
         return match json.load_type_id.as_str() {
-            BASIC_NUMBER_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicNumberTest>::new(json)?)),
-            BASIC_BOOLEAN_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicBooleanTest>::new(json)?)),
-            BASIC_TEXT_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicTextTest>::new(json)?)),
-            BASIC_VECTOR_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTest>::new(json)?)),
-            BASIC_MAP_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTest>::new(json)?)),
+            BASIC_NUMBER_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicNumberTest>::from_json(json)?)),
+            BASIC_BOOLEAN_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicBooleanTest>::from_json(json)?)),
+            BASIC_TEXT_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicTextTest>::from_json(json)?)),
+            BASIC_VECTOR_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTest>::from_json(json)?)),
+            BASIC_MAP_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTest>::from_json(json)?)),
+            MESH_GRAPHIC_LOAD_ID => Ok(Box::new(MeshGraphicLoader::from_json(json)?)),
+            TEXT_DISPLAY_FILE_ID => Ok(Box::new(TextDisplayLoader::from_json(json)?)),
             _ => Err(anyhow::Error::new(
                 LoadIDMatchError {
-                    load_type_id: json.load_type_id
+                    expected_id: "Expected one of basic test components load IDs".to_string(),
+                    actual_id: "".to_string()
                 }
             ))
         }
@@ -56,8 +63,9 @@ pub struct BasicTestComponentLoader<T: BasicTestComponent> {
     phantom: PhantomData<T>
 }
 
-impl<T: BasicTestComponent> BasicTestComponentLoader<T> {
-    fn new(json: JSONLoad) -> Result<Self> {
+impl<T: BasicTestComponent + for<'de> Deserialize<'de>> ComponentLoader for BasicTestComponentLoader<T>
+    where <T as specs::Component>::Storage: std::default::Default {
+    fn from_json(json: JSONLoad) -> Result<Self> where Self: Sized {
         return if json.load_type_id == T::LOAD_ID {
             Ok( Self {
                 cached_value: json.actual_value,
@@ -67,37 +75,26 @@ impl<T: BasicTestComponent> BasicTestComponentLoader<T> {
         } else {
             Err(anyhow::Error::new(
                 LoadIDMatchError {
-                    load_type_id: json.load_type_id,
+                    expected_id: T::LOAD_ID.to_string(),
+                    actual_id: json.load_type_id
                 })
             )
         }
     }
-}
 
-impl<T: BasicTestComponent + for<'de> Deserialize<'de>> ComponentLoader for BasicTestComponentLoader<T>
-    where <T as specs::Component>::Storage: std::default::Default {
     fn load_component<'b>(&self, builder: LazyBuilder<'b>, ecs: &World, window: &Window) -> Result<LazyBuilder<'b>> {
-        // println!("Entered load_component for {:?}", self.component_name);
-        // let mut ecs = ecs.write()
-        //     .map_err( |e| {
-        //         anyhow::Error::new(
-        //             ComponentPoisonError {
-        //                 var_name: stringify!(ecs).to_string(),
-        //                 source_string: e.to_string()
-        //             }
-        //         )
-        //     })?;
-        // println!("acquired lock for ecs");
-
-        // ecs.register::<T>();
-        // println!("registered component with ecs");
-
         Ok(
-            builder.with(
-                from_value::<T>(self.cached_value.clone())
-                    .map_err(|e| {
-                        anyhow::Error::new(e)
-                    })?
+            builder.with(from_value::<T>(self.cached_value.clone())
+                .map_err(|e| {
+                        anyhow::Error::new(
+                            ConvertJSONError {
+                                value: self.cached_value.clone(),
+                                into_type: "BasicTestComponentLoader::T".to_string(),
+                                source: e
+                            }
+                        )
+                    }
+                )?
             )
         )
     }
@@ -105,11 +102,13 @@ impl<T: BasicTestComponent + for<'de> Deserialize<'de>> ComponentLoader for Basi
     fn set_value(&mut self, new_value: JSONLoad) -> Result<()> {
         return if new_value.load_type_id == T::LOAD_ID {
             self.cached_value = new_value.actual_value;
+
             Ok(())
         } else {
             Err(anyhow::Error::new(
                 LoadIDMatchError {
-                    load_type_id: new_value.load_type_id,
+                    expected_id: T::LOAD_ID.to_string(),
+                    actual_id: new_value.load_type_id
                 }
             ))
         }

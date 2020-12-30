@@ -1,0 +1,14 @@
+{
+  "load_type_id": "mesh_graphic",
+  "actual_value": {
+    "x": 300.0,
+    "y": 100.0,
+    "width": 500,
+    "height": 300,
+    "r": 0.0,
+    "g": 0.0,
+    "b": 1.0,
+    "a": 1.0,
+    "stroke_width": 2.0
+  }
+}

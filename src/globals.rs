@@ -1,19 +1,20 @@
 use game_engine::load::LoadError;
 use serde_json::Value;
 use thiserror::Error;
+use std::sync::{PoisonError, RwLockWriteGuard};
+use specs::World;
 
 pub const LOAD_PATH: &str = "assets/";
 pub const JSON_FILE: &str = ".json";
 pub const JSON_ASSETS_DIR: &str = "json/";
+pub const FONTS_DIR: &str = "fonts/";
+
+pub const NORMAL_FONT: &str = "astron_boy";
 
 #[derive(Error, Debug)]
 pub enum TestGlobalError {
-    #[error("Failed to match load_type_id: {load_type_id}")]
+    #[error("load_type_id: {actual_id:?} did not match expected ID: {expected_id:?}")]
     LoadIDMatchError {
-        load_type_id: String
-    },
-    #[error("Given JSONLoad's load id: {actual_id} did not match TEST_COMPONENT_LOAD_ID: {expected_id}")]
-    TestComponentLoadIDError {
         expected_id: String,
         actual_id: String
     },
@@ -27,5 +28,13 @@ pub enum TestGlobalError {
         value: Value,
         into_type: String,
         source: serde_json::error::Error
+    },
+    #[error("Error getting write lock for ECS")]
+    ECSWriteError {
+        source_string: String
+    },
+    #[error("Error getting read lock for ECS")]
+    ECSReadError {
+        source_string: String
     }
 }

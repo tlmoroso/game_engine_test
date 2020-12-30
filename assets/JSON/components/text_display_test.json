@@ -1,0 +1,16 @@
+{
+  "load_type_id": "text_display",
+  "actual_value": {
+    "content": ["THIS IS A TEST"],
+    "position_x": 300,
+    "position_y": 100,
+    "bounds_x": 500,
+    "bounds_y": 300,
+    "size": 100,
+    "r": 1.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 1.0,
+    "font": "title_font"
+  }
+}

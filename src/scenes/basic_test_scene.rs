@@ -1,4 +1,4 @@
-use coffee::graphics::{Window, Frame, Text};
+use coffee::graphics::{Window, Frame, Text, Color};
 use coffee::{Timer};
 use coffee::load::{Task, Join};
 
@@ -17,9 +17,10 @@ use game_engine::scenes::scene_stack::SceneTransition;
 use crate::input::TestCustomInput;
 use specs::{World, Entity, RunNow};
 use crate::components::BasicTestComponentMux;
-use crate::globals::TestGlobalError::{LoadIDMatchError, ConvertJSONError};
+use crate::globals::TestGlobalError::{LoadIDMatchError, ConvertJSONError, ECSWriteError, ECSReadError};
 use crate::systems::print_basic_components::PrintBasicComponents;
 use std::ops::Deref;
+use crate::systems::draw_text_box::DrawTextBox;
 
 #[derive(Deserialize, Debug)]
 pub struct BasicTestSceneLoader {
@@ -37,7 +38,8 @@ impl BasicTestSceneLoader {
             })
         } else {
             Err(Error::new(LoadIDMatchError {
-                load_type_id: json.load_type_id
+                expected_id: BASIC_TEST_SCENE_FILE_ID.to_string(),
+                actual_id: json.load_type_id
             }))
         }
     }
@@ -99,13 +101,25 @@ impl Scene<TestCustomInput> for BasicTestScene {
     }
 
     fn draw(&mut self, ecs: Arc<RwLock<World>>, frame: &mut Frame, timer: &Timer) -> Result<()> {
+        frame.clear(Color::BLACK);
+
+        let immut_ecs = ecs.read()
+            .map_err(|e| {
+                anyhow::Error::new(ECSReadError {
+                    source_string: e.to_string()
+                })
+            })?;
+
+        let mut text_box_system = DrawTextBox { frame };
+        text_box_system.run_now(&*immut_ecs);
+
         if self.frame % 60 == 0 {
             println!("NUM FRAMES: {}", self.frame);
         }
 
         if self.frame == LAST_FRAME {
             let mut print_components = PrintBasicComponents;
-            print_components.run_now(ecs.read().unwrap().deref());
+            print_components.run_now(&*immut_ecs);
         }
         return Ok(())
     }
