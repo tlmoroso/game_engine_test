@@ -1,0 +1,64 @@
+{
+  "load_type_id": "drawable",
+  "actual_value": {
+    "shapes": [
+      {
+        "shapes": [
+          {
+            "shape": {
+              "Rectangle": {
+                "x": 300.0,
+                "y": 100.0,
+                "width": 500,
+                "height": 300
+              }
+            },
+            "description": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 1.0,
+              "a": 1.0,
+              "paint_type": {
+                "Stroke": {
+                  "width": 2.0
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "text": [
+      {
+        "content": ["HELLO WORLD"],
+        "content_index": 0,
+        "position_x": 300,
+        "position_y": 100,
+        "bounds_x": 500,
+        "bounds_y": 300,
+        "size": 100,
+        "r": 1.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 1.0,
+        "h_align": "Center",
+        "v_align": "Center",
+        "font": "title_font"
+      }
+    ],
+    "animated_sprites": [
+      {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256,
+        "position": [428, 400],
+        "scale": [1.0, 1.0],
+        "start_frame": 0,
+        "end_frame": 1,
+        "frame_pause": 15,
+        "image": "hello_world"
+      }
+    ]
+  }
+}

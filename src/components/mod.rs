@@ -6,7 +6,7 @@ pub mod basic_map_test;
 pub mod mesh_graphic;
 pub mod text_display;
 
-use game_engine::components::{ComponentMux, ComponentLoader};
+use game_engine::components::{ComponentMux, ComponentLoader, drawables::{DRAWABLE_LOAD_ID, Drawable, DrawableLoader}};
 use game_engine::load::JSONLoad;
 
 use anyhow::Result;
@@ -40,8 +40,7 @@ impl ComponentMux for BasicTestComponentMux {
             BASIC_TEXT_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicTextTest>::from_json(json)?)),
             BASIC_VECTOR_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTest>::from_json(json)?)),
             BASIC_MAP_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTest>::from_json(json)?)),
-            MESH_GRAPHIC_LOAD_ID => Ok(Box::new(MeshGraphicLoader::from_json(json)?)),
-            TEXT_DISPLAY_FILE_ID => Ok(Box::new(TextDisplayLoader::from_json(json)?)),
+            DRAWABLE_LOAD_ID => Ok(Box::new(DrawableLoader::from_json(json)?)),
             _ => Err(anyhow::Error::new(
                 LoadIDMatchError {
                     expected_id: "Expected one of basic test components load IDs".to_string(),

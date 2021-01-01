@@ -16,8 +16,9 @@ use crate::components::basic_vec_test::BasicVectorTest;
 use crate::components::basic_map_test::BasicMapTest;
 use crate::components::mesh_graphic::MeshGraphic;
 use crate::components::text_display::TextDisplay;
-use game_engine::globals::{FontDictLoader};
+use game_engine::globals::{FontDictLoader, ImageDictLoader, IMAGE_DICT_LOAD_ID, FONT_DICT_LOAD_ID};
 use crate::globals::TestGlobalError::ECSWriteError;
+use game_engine::components::drawables::Drawable;
 
 pub struct BasicTestGameWrapper {}
 
@@ -28,8 +29,7 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
         ecs.register::<BasicTextTest>();
         ecs.register::<BasicVectorTest>();
         ecs.register::<BasicMapTest>();
-        ecs.register::<MeshGraphic>();
-        ecs.register::<TextDisplay>();
+        ecs.register::<Drawable>();
     }
 
     fn load(window: &Window) -> Task<(Arc<RwLock<World>>, SceneStack<TestCustomInput>)> {
@@ -39,7 +39,16 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
             [
                 LOAD_PATH,
                 JSON_ASSETS_DIR,
-                "font_dict",
+                FONT_DICT_LOAD_ID,
+                JSON_FILE
+            ].join("")
+        );
+
+        let image_dict_loader = ImageDictLoader::new(
+            [
+                LOAD_PATH,
+                JSON_ASSETS_DIR,
+                IMAGE_DICT_LOAD_ID,
                 JSON_FILE
             ].join("")
         );
@@ -57,9 +66,10 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
 
         (
             font_dict_loader.load(ecs.clone(), window),
+            image_dict_loader.load(ecs.clone(), window),
             loader.load(ecs.clone(), window)
         ).join()
-            .map(|(font_dict, scene_stack)| {
+            .map(|(font_dict, image_dict, scene_stack)| {
                 let mut mut_ecs = ecs.write()
                     .map_err(|e| {
                         ECSWriteError {
@@ -68,6 +78,7 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
                     }).unwrap();
 
                 mut_ecs.insert(font_dict);
+                mut_ecs.insert(image_dict);
                 std::mem::drop(mut_ecs); // Manually drop RwLock so we can move ecs in return
 
                 return (ecs, scene_stack)

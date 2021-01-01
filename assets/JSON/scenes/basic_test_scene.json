@@ -2,7 +2,6 @@
   "load_type_id": "basic_test_scene",
   "actual_value": {
     "entity_paths": [
-      "assets/JSON/entities/basic_entity.json",
       "assets/JSON/entities/test_textbox.json"
     ],
     "scene_values": {

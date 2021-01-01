@@ -21,13 +21,15 @@ use crate::globals::TestGlobalError::{LoadIDMatchError, ConvertJSONError, ECSWri
 use crate::systems::print_basic_components::PrintBasicComponents;
 use std::ops::Deref;
 use crate::systems::draw_text_box::DrawTextBox;
+use game_engine::systems::draw_basic::DrawBasic;
+use game_engine::systems::animate_sprites::AnimateSprites;
 
 #[derive(Deserialize, Debug)]
 pub struct BasicTestSceneLoader {
     scene_json: JSONLoad,
 }
 
-const LAST_FRAME: usize = 120;
+const LAST_FRAME: usize = 300;
 pub const BASIC_TEST_SCENE_FILE_ID: &str = "basic_test_scene";
 
 impl BasicTestSceneLoader {
@@ -97,6 +99,15 @@ impl Scene<TestCustomInput> for BasicTestScene {
     fn update(&mut self, ecs: Arc<RwLock<World>>) -> Result<SceneTransition<TestCustomInput>> {
         self.frame = self.frame + 1;
 
+        let immut_ecs = ecs.read()
+            .map_err(|e| {
+                anyhow::Error::new(ECSReadError {
+                    source_string: e.to_string()
+                })
+            })?;
+        let mut animate_sprites = AnimateSprites;
+        animate_sprites.run_now(&*immut_ecs);
+
         Ok(SceneTransition::NONE)
     }
 
@@ -110,8 +121,9 @@ impl Scene<TestCustomInput> for BasicTestScene {
                 })
             })?;
 
-        let mut text_box_system = DrawTextBox { frame };
-        text_box_system.run_now(&*immut_ecs);
+        let mut draw_basic = DrawBasic { frame };
+        draw_basic.run_now(&*immut_ecs);
+
 
         if self.frame % 60 == 0 {
             println!("NUM FRAMES: {}", self.frame);

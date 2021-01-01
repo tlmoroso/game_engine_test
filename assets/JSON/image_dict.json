@@ -1,0 +1,8 @@
+{
+  "load_type_id": "image_dict",
+  "actual_value": {
+    "images": {
+      "hello_world": "assets/images/test_bot/LZBot.png"
+    }
+  }
+}
