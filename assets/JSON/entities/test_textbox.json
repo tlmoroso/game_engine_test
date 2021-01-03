@@ -2,7 +2,8 @@
   "load_type_id": "entity_loader",
   "actual_value": {
     "component_paths": [
-      "assets/JSON/components/drawable_test.json"
+      "assets/JSON/components/drawable_test.json",
+      "assets/JSON/components/default_sound_test.json"
     ]
   }
 }

@@ -1,0 +1,8 @@
+{
+  "load_type_id": "audio_controller",
+  "actual_value": {
+    "sounds": {
+      "hello_world": "assets/audio/hello_world.ogg"
+    }
+  }
+}

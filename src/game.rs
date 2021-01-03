@@ -16,9 +16,11 @@ use crate::components::basic_vec_test::BasicVectorTest;
 use crate::components::basic_map_test::BasicMapTest;
 use crate::components::mesh_graphic::MeshGraphic;
 use crate::components::text_display::TextDisplay;
-use game_engine::globals::{FontDictLoader, ImageDictLoader, IMAGE_DICT_LOAD_ID, FONT_DICT_LOAD_ID};
+use game_engine::globals::{FontDictLoader, ImageDictLoader, IMAGE_DICT_LOAD_ID, FONT_DICT_LOAD_ID, AudioController, AudioControllerLoader, AUDIO_CONTROLLER_LOAD_ID};
 use crate::globals::TestGlobalError::ECSWriteError;
 use game_engine::components::drawables::Drawable;
+use kira::manager::AudioManagerSettings;
+use game_engine::components::audibles::default_sound::DefaultSound;
 
 pub struct BasicTestGameWrapper {}
 
@@ -30,6 +32,7 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
         ecs.register::<BasicVectorTest>();
         ecs.register::<BasicMapTest>();
         ecs.register::<Drawable>();
+        ecs.register::<DefaultSound>();
     }
 
     fn load(window: &Window) -> Task<(Arc<RwLock<World>>, SceneStack<TestCustomInput>)> {
@@ -53,6 +56,15 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
             ].join("")
         );
 
+        let audio_controller_loader = AudioControllerLoader::new(
+            [
+                LOAD_PATH,
+                JSON_ASSETS_DIR,
+                AUDIO_CONTROLLER_LOAD_ID,
+                JSON_FILE
+            ].join("")
+        );
+
         let loader = SceneStackLoader::new(
             [
                 LOAD_PATH,
@@ -65,11 +77,12 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
         );
 
         (
-            font_dict_loader.load(ecs.clone(), window),
-            image_dict_loader.load(ecs.clone(), window),
+            font_dict_loader.load(),
+            image_dict_loader.load(),
+            audio_controller_loader.load(AudioManagerSettings::default()),
             loader.load(ecs.clone(), window)
         ).join()
-            .map(|(font_dict, image_dict, scene_stack)| {
+            .map(|(font_dict, image_dict, audio_controller, scene_stack)| {
                 let mut mut_ecs = ecs.write()
                     .map_err(|e| {
                         ECSWriteError {
@@ -79,6 +92,7 @@ impl GameWrapper<TestCustomInput> for BasicTestGameWrapper {
 
                 mut_ecs.insert(font_dict);
                 mut_ecs.insert(image_dict);
+                mut_ecs.insert(audio_controller);
                 std::mem::drop(mut_ecs); // Manually drop RwLock so we can move ecs in return
 
                 return (ecs, scene_stack)

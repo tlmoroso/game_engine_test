@@ -18,7 +18,7 @@ mod systems;
 
 fn main() -> coffee::Result<()> {
     MyGame::<BasicTestGameWrapper, TestCustomInput, ()>::run( WindowSettings {
-        title: String::from("A caffeinated game"),
+        title: String::from("HELLO WORLD"),
         size: (1280, 1024),
         resizable: true,
         fullscreen: false,

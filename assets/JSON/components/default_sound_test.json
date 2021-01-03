@@ -1,0 +1,7 @@
+{
+  "load_type_id": "default_sound",
+  "actual_value": {
+    "sound_name": "hello_world",
+    "play_flag": true
+  }
+}

@@ -23,6 +23,8 @@ use std::ops::Deref;
 use crate::systems::draw_text_box::DrawTextBox;
 use game_engine::systems::draw_basic::DrawBasic;
 use game_engine::systems::animate_sprites::AnimateSprites;
+use game_engine::systems::play_default_sounds::PlayDefaultSounds;
+use coffee::input::keyboard::KeyCode;
 
 #[derive(Deserialize, Debug)]
 pub struct BasicTestSceneLoader {
@@ -75,7 +77,8 @@ impl SceneLoader<TestCustomInput> for BasicTestSceneLoader {
                     BasicTestScene {
                         entities: entity_vec,
                         text: scene_values.text,
-                        frame: scene_values.frame
+                        frame: scene_values.frame,
+                        quit_flag: scene_values.quit_flag
                     }
                 ) as Box<dyn Scene<TestCustomInput>>
             })
@@ -86,13 +89,15 @@ impl SceneLoader<TestCustomInput> for BasicTestSceneLoader {
 pub struct BasicTestScene {
     entities: Vec<Entity>,
     text: String,
-    frame: usize
+    frame: usize,
+    quit_flag: bool
 }
 
 #[derive(Deserialize, Debug)]
 struct BasicTestSceneJSON {
     text: String,
-    frame: usize
+    frame: usize,
+    quit_flag: bool
 }
 
 impl Scene<TestCustomInput> for BasicTestScene {
@@ -105,8 +110,12 @@ impl Scene<TestCustomInput> for BasicTestScene {
                     source_string: e.to_string()
                 })
             })?;
+
         let mut animate_sprites = AnimateSprites;
         animate_sprites.run_now(&*immut_ecs);
+
+        let mut play_sounds = PlayDefaultSounds {};
+        play_sounds.run_now(&*immut_ecs);
 
         Ok(SceneTransition::NONE)
     }
@@ -137,6 +146,7 @@ impl Scene<TestCustomInput> for BasicTestScene {
     }
 
     fn interact(&mut self, ecs: Arc<RwLock<World>>, input: &mut TestCustomInput, window: &mut Window) -> Result<()> {
+        self.quit_flag = input.keys_pressed.contains(&KeyCode::Q);
         return Ok(())
     }
 
@@ -145,13 +155,6 @@ impl Scene<TestCustomInput> for BasicTestScene {
     }
 
     fn is_finished(&self) -> Result<bool> {
-        return if self.frame == LAST_FRAME {
-            println!("{}", self.get_name());
-            println!("Entities: {:?}", self.entities);
-
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        return Ok(self.quit_flag)
     }
 }

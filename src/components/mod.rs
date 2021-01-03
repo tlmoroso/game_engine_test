@@ -29,6 +29,7 @@ use crate::components::mesh_graphic::{MESH_GRAPHIC_LOAD_ID, MeshGraphicLoader, M
 use crate::components::text_display::{TEXT_DISPLAY_FILE_ID, TextDisplay, TextDisplayLoader};
 use crate::components::ComponentError::ComponentPoisonError;
 use specs::world::LazyBuilder;
+use game_engine::components::audibles::default_sound::{DefaultSoundLoader, DEFAULT_SOUND_LOAD_ID};
 
 pub struct BasicTestComponentMux {}
 
@@ -41,6 +42,7 @@ impl ComponentMux for BasicTestComponentMux {
             BASIC_VECTOR_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicVectorTest>::from_json(json)?)),
             BASIC_MAP_TEST_COMPONENT_LOAD_ID => Ok(Box::new(BasicTestComponentLoader::<BasicMapTest>::from_json(json)?)),
             DRAWABLE_LOAD_ID => Ok(Box::new(DrawableLoader::from_json(json)?)),
+            DEFAULT_SOUND_LOAD_ID=> Ok(Box::new(DefaultSoundLoader::from_json(json)?)),
             _ => Err(anyhow::Error::new(
                 LoadIDMatchError {
                     expected_id: "Expected one of basic test components load IDs".to_string(),

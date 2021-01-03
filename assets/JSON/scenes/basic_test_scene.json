@@ -6,7 +6,8 @@
     ],
     "scene_values": {
       "text": "TEST TEXT",
-      "frame": 0
+      "frame": 0,
+      "quit_flag": false
     }
   }
 }
