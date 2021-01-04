@@ -16,11 +16,13 @@ use crate::components::basic_vec_test::BasicVectorTest;
 use crate::components::basic_map_test::BasicMapTest;
 use crate::components::mesh_graphic::MeshGraphic;
 use crate::components::text_display::TextDisplay;
-use game_engine::globals::{FontDictLoader, ImageDictLoader, IMAGE_DICT_LOAD_ID, FONT_DICT_LOAD_ID, AudioController, AudioControllerLoader, AUDIO_CONTROLLER_LOAD_ID};
 use crate::globals::TestGlobalError::ECSWriteError;
 use game_engine::components::drawables::Drawable;
 use kira::manager::AudioManagerSettings;
 use game_engine::components::audibles::default_sound::DefaultSound;
+use game_engine::globals::font_dict::{FontDictLoader, FONT_DICT_LOAD_ID};
+use game_engine::globals::image_dict::{ImageDictLoader, IMAGE_DICT_LOAD_ID};
+use game_engine::globals::audio_controller::{AudioControllerLoader, AUDIO_CONTROLLER_LOAD_ID};
 
 pub struct BasicTestGameWrapper {}
 
